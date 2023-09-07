@@ -1,0 +1,28 @@
+# TSDF fusion related
+## PyTorch
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.0.1
+torchvision
+opencv-python
+## for marching cube
+scikit-image
+## for loading vertices
+plyfile==0.9
+## for reading csv
+pandas
+## for gpu k-means
+fast_pytorch_kmeans
+
+# For notebooks visualization
+matplotlib
+tqdm
+tensorboard
+jupyterlab
+notebook
+yapf
+
+# original CLIP from openai
+git+https://github.com/openai/CLIP.git@a9b1bf5920416aaeaec965c25dd9e8f98c864f16
+
+# LSeg
+git+https://github.com/quantaji/lseg-minimal.git@cff7e1a7c45ca2d5a622f815fc0dc373dfa6c87f

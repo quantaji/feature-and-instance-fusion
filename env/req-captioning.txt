@@ -1,0 +1,7 @@
+# repo for captioning
+## DeCap model
+git+https://github.com/quantaji/DeCap.git@02a24fe03e833af1850c650891569d62b7214fc7
+## ClipCap model
+git+https://github.com/quantaji/clipcap.git@ab7cc009e6cf65ee81b46ca04745acb2515af117
+# transformers for CLIP captioning
+transformers

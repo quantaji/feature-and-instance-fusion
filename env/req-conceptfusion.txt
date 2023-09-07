@@ -1,0 +1,8 @@
+# concept fusion related
+## open clip
+open-clip-torch==2.20.0
+## gradslam, customized for more efficient gpu ram usage
+git+https://github.com/quantaji/conceptfusion-gradslam-fork.git@b32bf90da2e420e722bcd9936f1047a34ed23fb0
+## SAM
+git+https://github.com/quantaji/Grounded-Segment-Anything.git@5415944918ba18e598a6a29e1e16b9e477b36ba9#subdirectory=segment_anything
+

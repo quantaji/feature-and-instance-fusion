@@ -1,0 +1,7 @@
+## Grounding SAM models
+### RAM and Tag2Text
+fairscale
+git+https://github.com/quantaji/recognize-anything.git@badda158c71ccbf6bf3d2052318b48182d311772
+
+### Grounding DINO
+git+https://github.com/quantaji/Grounded-Segment-Anything.git@5415944918ba18e598a6a29e1e16b9e477b36ba9#subdirectory=GroundingDINO
