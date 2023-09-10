@@ -5,11 +5,25 @@ import torch
 from skimage import measure
 from torch import Tensor
 
-from .utils import depth_to_voxel_layer, discrete2world, filter_voxel_from_depth_and_get_tsdf, hash2discrete, inhomo2homo, discrete2hash
+from .utils.tsdf_ops import depth_to_voxel_layer, filter_voxel_from_depth_and_get_tsdf
+from .utils.voxel_ops import discrete2hash, discrete2world, hash2discrete, inhomo2homo
 
 
 class ScalableTSDFVolume:
-    """Truncated signed distance function (TSDF) to fuse 3D voxels from 2D rgbd images."""
+    """Truncated signed distance function (TSDF) to fuse 3D voxels from 2D rgbd images. Actually, most of the feature integration can be found in open3d's voxel block grid (VoxelBlockGrid), however, it is still in development and currently, it cannot manipulate voxels freely (construct from numpy array)."""
+
+    extensive_properties = [
+        "_voxel_hash",
+        "_tsdf",
+        "_tsdf_w_sum",
+    ]  # this is a list that grow through time, is list is used in pruning
+
+    # construct tsdf related objects
+    _voxel_hash: Tensor  # Note that this array is always sorted!
+    _tsdf: Tensor
+    _tsdf_w_sum: Tensor
+
+   
 
     def __init__(
         self,
@@ -39,17 +53,6 @@ class ScalableTSDFVolume:
 
         # margin
         self._margin = margin
-
-        # construct tsdf related objects
-        self._voxel_hash: Tensor = None  # Note that this array is always sorted!
-        self._tsdf: Tensor = None
-        self._tsdf_w_sum: Tensor = None
-
-        self.extensive_properties = [
-            "_voxel_hash",
-            "_tsdf",
-            "_tsdf_w_sum",
-        ]  # this is a list that grow through time, is list is used in pruning
 
         self.reset()
 
@@ -111,17 +114,10 @@ class ScalableTSDFVolume:
         assert depth_intr.size() in [(3, 3), (4, 4)], "[!] `depth_intr' should be of shape (3, 3)."
         assert cam_pose.size() == (4, 4), "[!] `cam_pose' should be of shape (4, 4)."
 
-        # cuda_mem_clear()
-
-        # camera related
-        H, W = depth.size()
-        fx, fy = depth_intr[0, 0], depth_intr[1, 1]
-        cx, cy = depth_intr[0, 2], depth_intr[1, 2]
-
         # get layer of coordinates
         hash_c = depth_to_voxel_layer(
             depth=depth,
-            cam_intr=depth_intr,
+            depth_intr=depth_intr,
             cam_pose=cam_pose,
             voxel_origin=self._vol_origin,
             voxel_size=self._voxel_size,
@@ -129,7 +125,6 @@ class ScalableTSDFVolume:
             device=self.device,
             depth_max=depth.max() + self._sdf_trunc,
         )
-        # cuda_mem_clear()
 
         if hash_c is None:
             return  # there is no valid points
@@ -137,20 +132,20 @@ class ScalableTSDFVolume:
         # STEP 1: filter voxels
         hash_c, tsdf_upd = filter_voxel_from_depth_and_get_tsdf(
             hash_c=hash_c,
-            world_c=inhomo2homo(discrete2world(hash2discrete(hash_c), voxel_size=self.voxel_size, voxel_origin=self._vol_origin)),
+            world_c=inhomo2homo(
+                discrete2world(
+                    hash2discrete(hash_c),
+                    voxel_size=self.voxel_size,
+                    voxel_origin=self._vol_origin,
+                )
+            ),
             cam_pose=cam_pose,
             depth=depth,
+            depth_intr=depth_intr,
             sdf_trunc=self._sdf_trunc,
             margin=self._margin,
-            fx=fx,
-            fy=fy,
-            cx=cx,
-            cy=cy,
-            H=H,
-            W=W,
         )
         del depth
-        # cuda_mem_clear()
 
         if hash_c is None:
             return  # there is no valid points
@@ -175,7 +170,6 @@ class ScalableTSDFVolume:
             tsdf_w_sum = self._tsdf_w_sum
 
         del voxel_hash, indices
-        # cuda_mem_clear()
 
         # Step 2.2 forge tsdf
         tsdf_old = tsdf[idx_upd]
@@ -190,7 +184,6 @@ class ScalableTSDFVolume:
         self._tsdf_w_sum = tsdf_w_sum
 
         del tsdf, tsdf_w_sum, tsdf_w_old, tsdf_w_new
-        # cuda_mem_clear()
 
     @torch.no_grad()
     def get_marching_cube_required_voxels_and_masks(self):
@@ -249,7 +242,7 @@ class ScalableTSDFVolume:
 
             mc_layer[neighbor_indices] = True
 
-        return self._voxel_hash[mc_layer], mc_mask[mc_layer]
+        return self._voxel_hash[mc_layer], mc_mask[mc_layer], self._tsdf[mc_layer]
 
     @torch.no_grad()
     def prune_voxel(self, mild=False):
@@ -260,7 +253,7 @@ class ScalableTSDFVolume:
             mild = True: also retains the voxel with tsdf volume that is in range of (-1, 1) and also the other layer of it
         """
 
-        mc_layer_hash, _ = self.get_marching_cube_required_voxels_and_masks()
+        mc_layer_hash = self.get_marching_cube_required_voxels_and_masks()[0]
 
         retain_mask = torch.isin(self._voxel_hash, mc_layer_hash)
 
@@ -288,29 +281,26 @@ class ScalableTSDFVolume:
                 setattr(self, attr, getattr(self, attr)[retain_mask])
 
     @torch.no_grad()
-    def dense_tsdf(self):
-        """Extract dense tsdf for calculation of mesh. For extracting vertices. This function returns numpy array."""
-        discrete_c = hash2discrete(self._voxel_hash)
-
-        ox, oy, oz = discrete_c[:, 0].min(), discrete_c[:, 1].min(), discrete_c[:, 2].min()  # offset/origin
-        nx, ny, nz = discrete_c[:, 0].max() - ox + 1, discrete_c[:, 1].max() - oy + 1, discrete_c[:, 2].max() - oz + 1
-
-        dense_tsdf = torch.ones(size=(nx, ny, nz), dtype=torch.float, device=self.device)
-        dense_tsdf[discrete_c[:, 0] - ox, discrete_c[:, 1] - oy, discrete_c[:, 2] - oz] = self._tsdf
-
-        masks = torch.zeros(size=(nx, ny, nz), dtype=torch.bool, device=self.device)
-        # masks[discrete_c[:, 0] - ox, discrete_c[:, 1] - oy, discrete_c[:, 2] - oz] = (self._tsdf > -0.7)  # do this so that there won't be verts on the oter side.
-        masks[discrete_c[:, 0] - ox, discrete_c[:, 1] - oy, discrete_c[:, 2] - oz] = 1
-
-        return dense_tsdf.cpu().numpy(), masks.cpu().numpy().astype(bool), (ox, oy, oz)
-
-    @torch.no_grad()
     def extract_mesh(self):
         """extract mesh using marching cube"""
         torch.cuda.empty_cache()
-        dense_tsdf, mask, (ox, oy, oz) = self.dense_tsdf()
 
-        verts, faces, _, _ = measure.marching_cubes(dense_tsdf, mask=mask, level=0.0, spacing=(self._voxel_size,) * 3)
+        mc_hash, mc_mask, mc_tsdf = self.get_marching_cube_required_voxels_and_masks()
+
+        # get dense tsdf
+        discrete_c = hash2discrete(mc_hash)
+        ox, oy, oz = discrete_c[:, 0].min(), discrete_c[:, 1].min(), discrete_c[:, 2].min()  # offset/origin
+        nx, ny, nz = discrete_c[:, 0].max() - ox + 1, discrete_c[:, 1].max() - oy + 1, discrete_c[:, 2].max() - oz + 1
+
+        ## create empty array and give values
+        dense_tsdf = torch.ones(size=(nx, ny, nz), dtype=torch.float, device=self.device)
+        dense_tsdf[discrete_c[:, 0] - ox, discrete_c[:, 1] - oy, discrete_c[:, 2] - oz] = mc_tsdf
+        ## also for mask
+        masks = torch.zeros(size=(nx, ny, nz), dtype=torch.bool, device=self.device)
+        masks[discrete_c[:, 0] - ox, discrete_c[:, 1] - oy, discrete_c[:, 2] - oz] = mc_mask
+        # get dense tsdf finish
+
+        verts, faces, _, _ = measure.marching_cubes(dense_tsdf.cpu().numpy(), mask=masks.cpu().numpy(), level=0.0, spacing=(self._voxel_size,) * 3)
 
         # # convert back
         dense_origin = np.array([[ox.item(), oy.item(), oz.item()]])
@@ -318,3 +308,4 @@ class ScalableTSDFVolume:
 
         torch.cuda.empty_cache()
         return verts, faces
+

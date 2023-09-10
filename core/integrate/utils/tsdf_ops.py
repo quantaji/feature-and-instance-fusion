@@ -4,125 +4,13 @@ import numpy as np
 import torch
 from torch import Tensor
 
-
-def discretize_3d(
-    world_coord: Tensor,
-    voxel_size: float,
-    voxel_origin: Union[List[float], np.ndarray, Tensor] = [0, 0, 0],
-):
-    """Given (N, 3) world coordinates, voxel origin and voxel size, return the (i_x, i_y, i_z) integer coordinates
-    Args:
-        world_coord (Tensor): world coordinates of shape (N1, N2, ..., 3)
-        voxel_origin (Tensor, or numpy.ndarray, or list): the x,y,z origin of this voxel coordinates
-        voxel_size (float): voxel size
-    """
-    assert world_coord.size(-1) == 3, "[!] `world_coord`'s last coordinate is not shape 3."
-    original_size = world_coord.size()
-
-    voxel_origin = Tensor(voxel_origin).reshape(-1).to(world_coord.device)
-    assert voxel_origin.size() == (3,), "[!] `voxel_origin` is not of shape 3."
-    voxel_origin.reshape(1, 3)
-
-    discrete_coord = world_coord.reshape(-1, 3) - voxel_origin
-    discrete_coord = torch.round(discrete_coord / voxel_size).long()
-    discrete_coord = discrete_coord.reshape(original_size)
-
-    return discrete_coord
-
-
-def floor_3d(
-    world_coord: Tensor,
-    voxel_size: float,
-    voxel_origin: Union[List[float], np.ndarray, Tensor] = [0, 0, 0],
-):
-    """Given (N, 3) world coordinates, voxel origin and voxel size, return the (i_x, i_y, i_z) integer coordinates
-    Args:
-        world_coord (Tensor): world coordinates of shape (N1, N2, ..., 3)
-        voxel_origin (Tensor, or numpy.ndarray, or list): the x,y,z origin of this voxel coordinates
-        voxel_size (float): voxel size
-    """
-    assert world_coord.size(-1) == 3, "[!] `world_coord`'s last coordinate is not shape 3."
-    original_size = world_coord.size()
-
-    voxel_origin = Tensor(voxel_origin).reshape(-1).to(world_coord.device)
-    assert voxel_origin.size() == (3,), "[!] `voxel_origin` is not of shape 3."
-    voxel_origin.reshape(1, 3)
-
-    discrete_coord = world_coord.reshape(-1, 3) - voxel_origin
-    discrete_coord = torch.floor(discrete_coord / voxel_size).long()
-    discrete_coord = discrete_coord.reshape(original_size)
-
-    return discrete_coord
-
-
-def discrete2world(
-    discrete_coord: Tensor,
-    voxel_size: float,
-    voxel_origin: Union[List[float], np.ndarray, Tensor] = [0, 0, 0],
-):
-    assert discrete_coord.size(-1) == 3, "[!] `world_coord`'s last coordinate is not shape 3."
-    original_size = discrete_coord.size()
-
-    voxel_origin = Tensor(voxel_origin).reshape(-1).to(discrete_coord.device)
-    assert voxel_origin.size() == (3,), "[!] `voxel_origin` is not of shape 3."
-    voxel_origin.reshape(1, 3)
-
-    world_c = discrete_coord.reshape(-1, 3) * voxel_size + voxel_origin
-
-    return world_c.reshape(original_size)
-
-
-def inhomo2homo(inhomo_coord: Tensor):
-    """All vectors assume to be of shape (N, 3) or (N, 4)"""
-    return torch.cat([inhomo_coord, torch.ones_like(inhomo_coord[:, :1])], dim=-1)
-
-
-def homo2inhomo(homo_coord: Tensor):
-    return homo_coord[:, :3] / homo_coord[:, 3].reshape(-1, 1)
-
-
-def discrete2hash(discrete_coord: Tensor):
-    """
-    Given a tensor of (N1, N2, ..., Ni, 3), return a tensor of shape (N1, N2, ..., Ni), note that each integer value cannot exceed the range of [ -1048576, 1048575]. If we choose a voxel size of 0.001m = 1mm, this can give as about 1km of range.
-    """
-    assert discrete_coord.size(-1) == 3, "[!] `discrete_coord`'s last coordinate is not shape 3."
-    assert discrete_coord.dtype == torch.int64, "[!] `discrete_coord`'s dtype is not int64."
-    assert (discrete_coord.max() < (1 << 20)) and (discrete_coord.min() >= (-1 << 20)), "[!] maximum integer value exceeds."
-
-    x = discrete_coord.select(dim=-1, index=0) + (1 << 20)
-    y = discrete_coord.select(dim=-1, index=1) + (1 << 20)
-    z = discrete_coord.select(dim=-1, index=2) + (1 << 20)
-
-    return x * (1 << 42) + y * (1 << 21) + z
-
-
-def hash2discrete(hash: Tensor):
-    x = torch.div(hash, (1 << 42), rounding_mode="floor") - (1 << 20)
-    yz = torch.remainder(hash, (1 << 42))
-    y = torch.div(yz, (1 << 21), rounding_mode="floor") - (1 << 20)
-    z = torch.remainder(yz, (1 << 21)) - (1 << 20)
-
-    return torch.stack([x, y, z], dim=-1)
-
-
-def cuda_mem_clear(threshold=95000000000):
-    # my gpu have 11GB, so threshold is 10GB
-    if torch.cuda.is_available() and torch.cuda.memory_reserved() > threshold:
-        # print('empty cache')
-        torch.cuda.empty_cache()
-
-
-def unique_with_indexing(x, dim=0):
-    unique, inverse, counts = torch.unique(x, dim=dim, sorted=True, return_inverse=True, return_counts=True)
-    inv_sorted = inverse.argsort(stable=True)
-    tot_counts = torch.cat((counts.new_zeros(1), counts.cumsum(dim=0)))[:-1]
-    index = inv_sorted[tot_counts]
-    return unique, inverse, counts, index
+from .voxel_ops import discrete2hash, discrete2world, discretize_3d, hash2discrete, homo2inhomo, inhomo2homo
+from .voxel_ray_cast import voxel_batch_divide_from_pixel_grids
 
 
 def depth_to_voxel_layer(
     depth: Tensor,
-    cam_intr: Tensor,
+    depth_intr: Tensor,
     cam_pose: Tensor,
     voxel_origin: Tensor,
     voxel_size: float,
@@ -134,14 +22,14 @@ def depth_to_voxel_layer(
     Args:
         depth_max: maximum depth in meter, used to determin the grid density
     """
-    assert cam_intr.size() in [(3, 3), (4, 4)], "[!] `cam_intr' should be of shape (3, 3)."
+    assert depth_intr.size() in [(3, 3), (4, 4)], "[!] `depth_intr' should be of shape (3, 3)."
     assert cam_pose.size() == (4, 4), "[!] `cam_pose' should be of shape (4, 4)."
 
     H, W = depth.shape[0], depth.shape[1]
     max_factor = 1.7320508075688772
 
-    fx, fy = cam_intr[0, 0], cam_intr[1, 1]
-    cx, cy = cam_intr[0, 2], cam_intr[1, 2]
+    fx, fy = depth_intr[0, 0], depth_intr[1, 1]
+    cx, cy = depth_intr[0, 2], depth_intr[1, 2]
 
     # we want a cubic array of points that can densely fill the true grid world.
     # we want a grid of cubics with a=voxel_size/sqrt(3),
@@ -197,18 +85,18 @@ def filter_voxel_from_depth_and_get_tsdf(
     world_c: Tensor,
     cam_pose: Tensor,
     depth: Tensor,
+    depth_intr: Tensor,
     sdf_trunc: float,
     margin: float,
-    fx,
-    fy,
-    cx,
-    cy,
-    H,
-    W,
 ):
     # convert world coordinates to camera coordinates
     world2cam = torch.inverse(cam_pose)
     cam_c = torch.matmul(world2cam, world_c.transpose(1, 0)).transpose(1, 0).float()
+
+    H, W = depth.shape[0], depth.shape[1]
+
+    fx, fy = depth_intr[0, 0], depth_intr[1, 1]
+    cx, cy = depth_intr[0, 2], depth_intr[1, 2]
 
     pix_z = cam_c[:, 2] / cam_c[:, 3]
     pix_x = torch.round((cam_c[:, 0] * fx / cam_c[:, 2]) + cx - 0.5).long()
@@ -241,19 +129,11 @@ def filter_voxel_from_depth_and_image_and_get_pixels(
     world_c: Tensor,
     cam_pose: Tensor,
     depth: Tensor,
+    depth_intr: Tensor,
+    feat_intr: Tensor,
+    H_f: int,
+    W_f: int,
     margin: float,
-    fx_d,
-    fy_d,
-    cx_d,
-    cy_d,
-    H_d,
-    W_d,
-    fx_f,
-    fy_f,
-    cx_f,
-    cy_f,
-    H_f,
-    W_f,
 ):
     # ! Note that, when we back project pixel-projected voxel to pixel, some voxel's new pixel may deviate a lot from the original pixel, this is due to large variance of depths in this region. Therefore, we need to set a larger margin than sdf_trunc to prevent filtering out these voxels.
     world2cam = torch.inverse(cam_pose)
@@ -261,9 +141,18 @@ def filter_voxel_from_depth_and_image_and_get_pixels(
 
     indices = torch.arange(world_c.size(0), device=world_c.device)
 
+    H_d, W_d = depth.shape[0], depth.shape[1]
+
+    fx_d, fy_d = depth_intr[0, 0], depth_intr[1, 1]
+    cx_d, cy_d = depth_intr[0, 2], depth_intr[1, 2]
+
     pix_z = cam_c[:, 2] / cam_c[:, 3]
     pix_x_d = torch.round((cam_c[:, 0] * fx_d / cam_c[:, 2]) + cx_d - 0.5).long()
     pix_y_d = torch.round((cam_c[:, 1] * fy_d / cam_c[:, 2]) + cy_d - 0.5).long()
+
+    fx_f, fy_f = feat_intr[0, 0], feat_intr[1, 1]
+    cx_f, cy_f = feat_intr[0, 2], feat_intr[1, 2]
+
     pix_x_f = torch.round((cam_c[:, 0] * fx_f / cam_c[:, 2]) + cx_f - 0.5).long()
     pix_y_f = torch.round((cam_c[:, 1] * fy_f / cam_c[:, 2]) + cy_f - 0.5).long()
 
@@ -288,11 +177,116 @@ def filter_voxel_from_depth_and_image_and_get_pixels(
     return indices_f2, pix_x_f_f2, pix_y_f_f2
 
 
-def instance_id_to_one_hot_mask(instance: torch.Tensor):
+def rough_filter_voxel_given_view(
+    cam_pose: Tensor,
+    cam_intr: Tensor,
+    voxel_hash: Tensor,
+    voxel_size: float,
+    voxel_origin: Union[List[float], np.ndarray, Tensor],  # of shape (3,)
+    H: int,
+    W: int,
+):
     """
-    Input:
-        instance: a tensor of HxW, which dtype of int
-    Return:
-        a mask tensor of shape n_mask x H x W, of dtype bool
+    given a view pose, get all possible voxels that is in this view. No depths envolved
     """
-    return torch.nn.functional.one_hot(instance.unique(sorted=True, return_inverse=True)[1]).movedim(-1, 0) > 0
+    sqrt3 = 1.7320508075688772  # maximum radius is voxel_size * sqrt3 / 2
+
+    fx, fy = cam_intr[0, 0], cam_intr[1, 1]
+    cx, cy = cam_intr[0, 2], cam_intr[1, 2]
+
+    world_c = inhomo2homo(discrete2world(discrete_coord=hash2discrete(voxel_hash), voxel_size=voxel_size, voxel_origin=voxel_origin))
+
+    cam_c = torch.matmul(torch.inverse(cam_pose), world_c.transpose(1, 0)).transpose(1, 0).float()
+
+    z = cam_c[:, 2] / cam_c[:, 3]  # N,
+    px = (cam_c[:, 0] * fx / cam_c[:, 2]) + cx - 0.5
+    py = (cam_c[:, 1] * fy / cam_c[:, 2]) + cy - 0.5
+
+    rx = voxel_size * fx / cam_c[:, 2] * sqrt3 / 2  # maximum radius of this voxel in x and y direction
+    ry = voxel_size * fy / cam_c[:, 2] * sqrt3 / 2  # # N, 1, 1
+
+    in_mask = (py + ry >= 0) * (py - ry <= H) * (px + rx >= 0) * (px - rx <= W) * (z > 0)
+
+    return in_mask
+
+
+def pixel_voxel_corres_given_depth(
+    voxel_hash: Tensor,
+    voxel_origin: Union[List[float], np.ndarray, Tensor],
+    voxel_size: float,
+    cam_intr: Tensor,
+    cam_pose: Tensor,
+    H: int,
+    W: int,
+    depth: Tensor,
+):
+    """
+    given hashes of voxel, and camera intr, and the H and W, calculate the map from pixel to voxels. It is possible that the pixel's dpeth is inf, so that it does not have correspondence. It is also possible that the depth map we use are from real sensors, which may results in high variance.
+
+    depth can have different resolution and intrinsic w.r.t pixel
+
+    Returns:
+        pixel_x, pixel_y, voxel_indices_in_original_voxel_hash_list
+    """
+
+    # ! STEP 1, back-project pixel to 3d point clouds, then hash it to get pixel to voxel coorespondence
+    depth_interpolated = torch.nn.functional.interpolate(depth.unsqueeze(0).unsqueeze(0), size=(H, W), mode="nearest").squeeze(0).squeeze(0)
+    _temp_idx = torch.argwhere(depth_interpolated > 0)
+    # these are the valid pixels of this image
+    py_layer, px_layer = _temp_idx[:, 0], _temp_idx[:, 1]
+    # del _temp_idx
+
+    # step 1.2 get the voxel hash and indices of these pixels, and back project to 2D images
+    layer_z = depth_interpolated[py_layer, px_layer]  # for voxel remember to add an amount to avoid rounding error
+
+    fx_m, fy_m = cam_intr[0, 0], cam_intr[1, 1]
+    cx_m, cy_m = cam_intr[0, 2], cam_intr[1, 2]
+
+    # del depth_interpolated
+    layer_x = (px_layer - cx_m + 0.5) / fx_m * layer_z
+    layer_y = (py_layer - cy_m + 0.5) / fy_m * layer_z
+
+    layer_hash_c = discrete2hash(
+        discretize_3d(
+            homo2inhomo(
+                torch.matmul(
+                    cam_pose,
+                    torch.stack(
+                        [
+                            layer_x,
+                            layer_y,
+                            layer_z,
+                            torch.ones_like(layer_z),
+                        ],
+                        dim=1,
+                    ).transpose(1, 0),
+                )
+                .transpose(1, 0)
+                .float()
+            ),
+            voxel_origin=voxel_origin,
+            voxel_size=voxel_size,
+        )
+    )
+    # del layer_x, layer_y, layer_z
+
+    # ! STEP 2: get the voxels that best fit this view from the tsdf volume
+    # note that we might lose some voxels at edge, where its center does not appear in any of the image.
+    valid_filter = torch.isin(
+        layer_hash_c,
+        voxel_hash[
+            rough_filter_voxel_given_view(
+                cam_intr=cam_intr,
+                cam_pose=cam_pose,
+                voxel_hash=voxel_hash,
+                voxel_origin=voxel_origin,
+                voxel_size=voxel_size,
+                H=H,
+                W=W,
+            )
+        ],
+    )  # this valid_filter is a filter that t
+
+    layer_indices = torch.cat([voxel_hash, layer_hash_c[valid_filter]], dim=0).unique(sorted=True, return_inverse=True)[1][voxel_hash.shape[0] :]
+
+    return px_layer[valid_filter], py_layer[valid_filter], layer_indices

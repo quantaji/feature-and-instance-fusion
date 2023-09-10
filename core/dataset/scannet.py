@@ -359,7 +359,7 @@ class ScanNetSingleScan(Dataset):
             results["depth"] = pil_to_tensor(Image.open(files_dict["depth_file_name"])).squeeze(0).to(device, torch.float32) / SCANNET_DEPTH_SCALE
 
         if "color" in keys:
-            results["color"] = to_tensor(Image.open(files_dict["color_file_name"])).squeeze(0).to(device)
+            results["color"] = to_tensor(Image.open(files_dict["color_file_name"])).squeeze(0).to(device).movedim(0, -1)
 
         if "pose" in keys:
             results["pose"] = torch.from_numpy(self.get_pose_matrix(files_dict["pose_file_name"])).to(device)
