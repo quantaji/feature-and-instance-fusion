@@ -4,6 +4,7 @@
 torch==2.0.1
 torchvision
 opencv-python
+pycocotools
 ## for marching cube
 scikit-image
 ## for loading vertices
