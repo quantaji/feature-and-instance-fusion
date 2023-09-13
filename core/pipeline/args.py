@@ -32,9 +32,9 @@ class ProgramArgs:
     lseg_ckpt: str = str(Path.home() / "Models/LSeg/lseg_minimal_e200.ckpt")
     # grounded-sam related
     grounding_dino_config_pth: str = "./config/grounding_dino_config/GroundingDINO_SwinT_OGC.py"
-    grounding_dino_ckpt: str = str(Path.home() / "Models/GroundingDINO/groundingdino_swint_ogc.pth")
-    ram_ckpt: str = str(Path.home() / "Models/RAM_Tag2Text/ram_swin_large_14m.pth")
-    sam_hq_ckpt: str = str(Path.home() / "Models/SAM_HQ/sam_hq_vit_h.pth")
+    grounding_dino_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / "Models/GroundingDINO/groundingdino_swint_ogc.pth")
+    ram_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / "Models/RAM_Tag2Text/ram_swin_large_14m.pth")
+    sam_hq_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / "Models/SAM_HQ/sam_hq_vit_h.pth")
     # mask rcnn
     mask_rcnn_ckpt: str = None  # none means use default
     # random feature related

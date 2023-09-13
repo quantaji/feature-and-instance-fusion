@@ -16,5 +16,5 @@ SCENES=(scene0000_00 scene0645_01 scene0608_00 scene0643_00 scene0488_01)
 for SCENE in "${SCENES[@]}"; do
     echo $SCENE
     SAVE_DIR=${SCRATCH}/Experiments/feature-instance-fusion/scannet_${SCENE}
-    $PYTHON fusion.py --dataset_dir $SCANNET_ROOT --scan_id $SCENE --pipeline tsdf_feature --pipeline_device cuda:0 --start 0 --end -1 --stride 1 --save_dir $SAVE_DIR --extractor grounded_sam --extractor_device cuda:0 --save_extraction --panoptic_threshold 0.15 --tsdf_depth_type mesh_rc --save_extraction
+    $PYTHON fusion.py --dataset_dir $SCANNET_ROOT --scan_id $SCENE --pipeline tsdf_panoptic --pipeline_device cuda:0 --start 0 --end -1 --stride 1 --save_dir $SAVE_DIR --extractor grounded_sam --extractor_device cuda:0 --save_extraction --panoptic_threshold 0.15 --tsdf_depth_type mesh_rc --save_extraction
 done
