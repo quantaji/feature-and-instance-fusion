@@ -1,6 +1,8 @@
-from .base import BaseExtractor, RandomFeatureExtractor
+from .base import BaseExtractor
+from .color import ColorExtractor
 from .conceptfusion import ConceptFusionFeatureExtractor
-from .grounded_sam import GroundedSAMInstanceExtractor, RandomFeatureExtractor
+from .ground_truth import GroundTruthInstanceExtractor, GroundTruthSemanticExtractor
+from .grounded_sam import GroundedSAMInstanceExtractor, RandomGroundedSAMFeatureExtractor
 from .lseg import LSegFeatureExtractor
 from .mask_rcnn import MaskRCNNMaskExtractor
 from .sam import RandomSAMFeatureExtractor, SAMMaskExtractor

@@ -10,6 +10,8 @@ from .utils import boolean_mask_to_random_feats, resize_feats, resize_masks
 
 
 class BaseExtractor:
+    name: str
+
     def load_model(self):
         raise NotImplementedError
 
@@ -44,16 +46,16 @@ class BaseExtractor:
         file_dict = torch.load(f=pth)
 
         load_dict = {}
-        for key, value in load_dict.items():
+        for key, value in file_dict.items():
             new_value = value
             new_key = key
 
             if key == "rle":
-                new_value = mask_utils.decode(value).astype(bool)
+                new_value = mask_utils.decode(new_value).astype(bool)
                 new_key = "masks"
 
-            if isinstance(value, np.ndarray):
-                new_value = torch.from_numpy(value).to(device)
+            if isinstance(new_value, np.ndarray):
+                new_value = torch.from_numpy(new_value).to(device)
 
             load_dict[new_key] = new_value
 
@@ -66,6 +68,7 @@ class BaseExtractor:
         output_width: int = None,
         device: str = None,
         normalize: bool = False,
+        dtype: str = None,
     ) -> torch.Tensor:
         assert "feats" in results.keys()
 
@@ -86,6 +89,9 @@ class BaseExtractor:
 
         if device is not None:
             feats = feats.to(device=device)
+
+        if dtype is not None:
+            feats = feats.to(getattr(torch, dtype))
 
         return feats
 
@@ -127,6 +133,7 @@ class RandomFeatureExtractor(BaseExtractor):
         output_width: int = None,
         device: str = None,
         normalize: bool = False,
+        dtype: str = None,
     ) -> torch.Tensor:
         assert "masks" in results.keys()
 
@@ -136,4 +143,4 @@ class RandomFeatureExtractor(BaseExtractor):
             feat_dim=self.feat_dim,
         )
 
-        return super().get_feats({"feats": feats}, output_height, output_width, device, normalize)
+        return super().get_feats({"feats": feats}, output_height, output_width, device, normalize, dtype)

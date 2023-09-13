@@ -15,6 +15,8 @@ class LSegFeatureExtractor(BaseExtractor):
     Extract dense LSeg features.
     """
 
+    name = "lseg"
+
     lseg: LSegNet = None
 
     def __init__(self, lseg_ckpt: str, device: str = "cpu") -> None:
@@ -60,5 +62,6 @@ class LSegFeatureExtractor(BaseExtractor):
         output_width: int = None,
         device: str = None,
         normalize: bool = True,  # LSeg we want to normalize it
+        dtype: str = None,
     ) -> torch.Tensor:
-        return super().get_feats(results, output_height, output_width, device, normalize)
+        return super().get_feats(results, output_height, output_width, device, normalize, dtype)

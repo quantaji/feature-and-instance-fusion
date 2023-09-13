@@ -7,6 +7,12 @@ from torch import Tensor
 
 from .utils.tsdf_ops import depth_to_voxel_layer, filter_voxel_from_depth_and_get_tsdf
 from .utils.voxel_ops import discrete2hash, discrete2world, hash2discrete, inhomo2homo
+from .utils.voxel_to_mesh import get_mesh_from_voxel
+
+try:
+    import open3d as o3d
+except:
+    o3d = None
 
 
 class ScalableTSDFVolume:
@@ -23,7 +29,16 @@ class ScalableTSDFVolume:
     _tsdf: Tensor
     _tsdf_w_sum: Tensor
 
-   
+    # these variables are defined after fusion is done
+    mc_layer_verts: np.ndarray = None
+    mc_layer_faces: np.ndarray = None
+    mc_voxel_hash: Tensor = None
+    mc_voxel_verts: np.ndarray = None
+    mc_voxel_faces: np.ndarray = None
+
+    # these are used when open3d is usable
+    mc_layer_raycast: "o3d.t.geometry.RaycastingScene" = None
+    mc_voxel_raycast: "o3d.t.geometry.RaycastingScene" = None
 
     def __init__(
         self,
@@ -226,7 +241,7 @@ class ScalableTSDFVolume:
 
         if (neibor_counts == 8).sum().item() == 0:
             # the current voxels is not enough to run marching cube
-            return None, None
+            return None, None, None
 
         mc_mask = (neibor_counts == 8) * ((tsdf_sign_sum < 8) * (tsdf_sign_sum > -8))
 
@@ -309,3 +324,88 @@ class ScalableTSDFVolume:
         torch.cuda.empty_cache()
         return verts, faces
 
+    @torch.no_grad()
+    def set_mc_layer_mesh(self):
+        """
+        This function calculates the meshes of marching cube layer, and the meshes of the voxels/cubes of the marching cube layer
+        """
+
+        # marching cube layer
+        self.mc_layer_verts, self.mc_layer_faces = self.extract_mesh()
+
+        # marching cube included voxel
+        self.mc_voxel_hash = self.get_marching_cube_required_voxels_and_masks()[0]
+        _mc_voxel_verts_int, self.mc_voxel_faces = get_mesh_from_voxel(self.mc_voxel_hash)
+        self.mc_voxel_verts = (
+            discrete2world(
+                discrete_coord=_mc_voxel_verts_int,
+                voxel_origin=self._vol_origin,
+                voxel_size=self.voxel_size,
+            )
+            - 0.5 * self.voxel_size
+        )
+        self.mc_voxel_verts = self.mc_voxel_verts.cpu().numpy()
+        self.mc_voxel_faces = self.mc_voxel_faces.cpu().numpy()
+
+        if o3d is not None:
+            self.mc_layer_raycast = o3d.t.geometry.RaycastingScene()
+            mesh = o3d.t.geometry.TriangleMesh(
+                self.mc_layer_verts.astype(np.float32),
+                self.mc_layer_faces,
+            )
+            self.mc_layer_raycast.add_triangles(mesh)
+
+            self.mc_voxel_raycast = o3d.t.geometry.RaycastingScene()
+            mesh = o3d.t.geometry.TriangleMesh(
+                self.mc_voxel_verts.astype(np.float32),
+                self.mc_voxel_faces,
+            )
+            self.mc_voxel_raycast.add_triangles(mesh)
+
+    def get_depth_from_mc_mesh(
+        self,
+        cam_intr: Tensor,
+        cam_pose: Tensor,
+        H: int,
+        W: int,
+    ) -> np.ndarray:
+        assert o3d is not None, "install open3d 0.17.0 to enable this feature"
+
+        if self.mc_layer_raycast is None:
+            self.set_mc_layer_mesh()
+
+        rays = self.mc_layer_raycast.create_rays_pinhole(
+            intrinsic_matrix=o3d.core.Tensor(cam_intr[:3, :3].cpu().numpy()),
+            extrinsic_matrix=o3d.core.Tensor(torch.linalg.inv(cam_pose).cpu().numpy()),
+            width_px=W,
+            height_px=H,
+        )
+        answer = self.mc_layer_raycast.cast_rays(rays)
+        depth = answer["t_hit"].numpy()
+        depth[np.isinf(depth)] = 0
+
+        return depth
+
+    def get_depth_from_mc_voxel(
+        self,
+        cam_intr: Tensor,
+        cam_pose: Tensor,
+        H: int,
+        W: int,
+    ) -> np.ndarray:
+        assert o3d is not None, "install open3d 0.17.0 to enable this feature"
+
+        if self.mc_voxel_raycast is None:
+            self.set_mc_layer_mesh()
+
+        rays = self.mc_voxel_raycast.create_rays_pinhole(
+            intrinsic_matrix=o3d.core.Tensor(cam_intr[:3, :3].cpu().numpy()),
+            extrinsic_matrix=o3d.core.Tensor(torch.linalg.inv(cam_pose).cpu().numpy()),
+            width_px=W,
+            height_px=H,
+        )
+        answer = self.mc_voxel_raycast.cast_rays(rays)
+        depth = answer["t_hit"].numpy()
+        depth[np.isinf(depth)] = 0
+
+        return depth

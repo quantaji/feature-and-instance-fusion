@@ -11,6 +11,8 @@ from .base import BaseExtractor, RandomFeatureExtractor
 
 
 class MaskRCNNMaskExtractor(BaseExtractor):
+    name = "mask_rcnn"
+
     cfg: CfgNode = None
     predictor: DefaultPredictor = None
 

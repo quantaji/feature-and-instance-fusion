@@ -20,16 +20,16 @@ def unique_with_indexing(x, dim=0):
     return unique, inverse, counts, index
 
 
-def instance_id_to_one_hot_mask(instance: torch.Tensor, background_id: int):
+def instance_id_to_one_hot_mask(instance: torch.Tensor, background_id: int = -1):
     """
     Input:
         instance: a tensor of HxW, which dtype of int
     Return:
         a mask tensor of shape n_mask x H x W, of dtype bool
     """
-    masks = torch.nn.functional.one_hot(instance.unique(sorted=True, return_inverse=True)[1]).movedim(-1, 0) > 0
-
-    not_background = torch.arange(masks.shape[0], dtype=int) != background_id
+    unique, masks = instance.unique(sorted=True, return_inverse=True)
+    masks = torch.nn.functional.one_hot(masks).movedim(-1, 0) > 0
+    not_background = unique != background_id
 
     return masks[not_background]
 
@@ -41,6 +41,9 @@ def intrinsic_rescale(
     H_new: int,
     W_new: int,
 ):
+    if H_new is None or W_new is None:
+        return intr_ori
+
     intr_new = intr_ori.clone().detach()
     # scale factor
     sx, sy = W_new / W_ori, H_new / H_ori

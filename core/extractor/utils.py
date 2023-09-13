@@ -79,6 +79,13 @@ def resize_masks(masks: torch.Tensor, H: int, W: int):
     return f.interpolate(masks.to(torch.uint8).unsqueeze(0), size=(H, W), mode="nearest").squeeze(0)
 
 
+def resize_depth(depth: torch.Tensor, H: int, W: int):
+    """
+    Depth is assumed to have shape (H, W)
+    """
+    return f.interpolate(depth.unsqueeze(0).unsqueeze(0), size=(H, W), mode="nearest").squeeze(0).squeeze(0)
+
+
 def show_mask(mask, ax, random_color=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.9])], axis=0)

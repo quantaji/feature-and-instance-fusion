@@ -64,6 +64,8 @@ def load_grounding_dino(grounding_dino_config_path, grounding_dino_checkpoint_pa
 
 
 class GroundedSAMInstanceExtractor(BaseExtractor):
+    name = "grounded_sam"
+
     sam: Sam = None
     ram: RAM = None
     grounding_dino: GroundingDINO = None

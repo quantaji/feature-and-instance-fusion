@@ -11,6 +11,8 @@ from .base import BaseExtractor, RandomFeatureExtractor
 
 
 class SAMMaskExtractor(BaseExtractor):
+    name = "sam"
+
     sam: Sam
     mask_generator = SamAutomaticMaskGenerator
 

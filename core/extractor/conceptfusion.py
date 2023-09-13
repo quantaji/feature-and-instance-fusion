@@ -16,6 +16,8 @@ from .utils import resize_feats
 
 
 class ConceptFusionFeatureExtractor(BaseExtractor):
+    name = "conceptfusion"
+
     sam: Sam = None
     clip_model: CLIP = None
     clip_preprocessor: Callable = None
@@ -123,13 +125,14 @@ class ConceptFusionFeatureExtractor(BaseExtractor):
         output_width: int = None,
         device: str = None,
         normalize: bool = True,
+        dtype: str = None,
     ) -> Tensor:
         masks = results["masks"]
         global_feat = results["global_feat"]
         feat_dim = global_feat.shape[-1]
         H, W = results["H"], results["W"]
 
-        dense_feats = torch.randn((H, W, feat_dim), device=self.device, dtype=torch.float32) * 1e-16
+        dense_feats = torch.randn((H, W, feat_dim), device=device, dtype=torch.float32) * 1e-16
 
         for idx, roi_feats in enumerate(results["regional_feats"]):
             w = results["softmax_scores"][idx] * self.global_weight
@@ -146,6 +149,7 @@ class ConceptFusionFeatureExtractor(BaseExtractor):
             output_width=output_width,
             device=device,
             normalize=normalize,
+            dtype=dtype,
         )
 
 

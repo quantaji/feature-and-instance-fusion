@@ -8,6 +8,12 @@ from torch import Tensor
 from .scalable_tsdf_volume import ScalableTSDFVolume
 from .utils.tsdf_ops import filter_voxel_from_depth_and_image_and_get_pixels
 from .utils.voxel_ops import discrete2hash, discrete2world, discretize_3d, hash2discrete, inhomo2homo
+from .utils.voxel_ray_cast import voxel_ray_cast
+
+try:
+    import open3d as o3d
+except:
+    o3d = None
 
 
 class FeatureFusionScalableTSDFVolume(ScalableTSDFVolume):
@@ -105,13 +111,18 @@ class FeatureFusionScalableTSDFVolume(ScalableTSDFVolume):
         self,
         feat_img: Tensor,
         feat_intr: Tensor,
-        depth: Tensor,
-        depth_intr: Tensor,
         cam_pose: Tensor,
+        depth_type: str,
+        depth_intr: Tensor = None,
+        depth: Tensor = None,
         obs_weight: float = 1.0,
     ):
         """
         Integrade feature, with exsisting voxels. We assume depths and feature camera share same pose.
+        depth_type: this arguments specify how depth information are extracted, in order to back project pixels to 3d to get pixel voxel correspondence
+            'sensor': use depth image from real sensor, not so accurate
+            'mesh_rc': ray casting of marching cube's extracted mesh, open3d is needed
+            'voxel_rc' ray casting of voxel's cubes' mesh, if you install open3d, it also uses ray cast. If not, it use my self written torch functions, which is slow, about 400ms per frame. (or you can use voxel_rc_torch to manually test it)
         feat_img is of shape HxWxC
         """
         assert depth_intr.size() in [(3, 3), (4, 4)], "[!] `cam_intr' should be of shape (3, 3)."
@@ -120,8 +131,53 @@ class FeatureFusionScalableTSDFVolume(ScalableTSDFVolume):
 
         assert feat_img.size(2) == self.feat_dim, "[!] `dense_feat's third dimension should be equal to TSDF Volume's feature dimension."
 
+        assert depth_type in {"sensor", "mesh_rc", "voxel_rc", "voxel_rc_torch"}
+
         # camera related
         H_f, W_f = feat_img.shape[0], feat_img.shape[1]
+
+        # get depth
+        device = self.device
+        if depth_type == "sensor":
+            assert depth_intr is not None
+            assert depth is not None
+
+        elif depth_type == "mesh_rc":
+            assert o3d is not None, "install open3d 0.17.0 to enable this feature"
+
+            depth = torch.from_numpy(
+                self.get_depth_from_mc_mesh(
+                    cam_intr=feat_intr,
+                    cam_pose=cam_pose,
+                    H=H_f,
+                    W=W_f,
+                )
+            ).to(device)
+            depth_intr = feat_intr
+
+        elif depth_type == "voxel_rc" and o3d is not None:
+            depth = torch.from_numpy(
+                self.get_depth_from_mc_voxel(
+                    cam_intr=feat_intr,
+                    cam_pose=cam_pose,
+                    H=H_f,
+                    W=W_f,
+                )
+            ).to(device)
+            depth_intr = feat_intr
+            depth[depth > 0] += self.voxel_size * 0.01
+
+        else:
+            depth_intr = feat_intr
+            _, _, _, depth = voxel_ray_cast(
+                voxel_hash=self._voxel_hash,
+                voxel_origin=self._vol_origin,
+                voxel_size=self.voxel_size,
+                cam_intr=feat_intr,
+                cam_pose=cam_pose,
+                H=H_f,
+                W=W_f,
+            )
 
         # get valid voxel, depth
         indices, pix_x, pix_y = filter_voxel_from_depth_and_image_and_get_pixels(
