@@ -31,7 +31,7 @@ def tsdf_panoptic(args: ProgramArgs):
             instance_pth = os.path.join(extraction_save_dir, "{:>06d}.pt".format(idx))
             if os.path.exists(instance_pth):
                 continue
-            
+
             if args.extractor == "gt_instance":
                 image = dataset["scan_dataset"][idx]["instance_img"]
             else:
@@ -115,4 +115,4 @@ def tsdf_panoptic(args: ProgramArgs):
 
         torch.save(corres, os.path.join(save_dir, "corres_{:>06d}.pt".format(idx)))
 
-    tsdf_volume.save_instance_to_path(os.path.join(save_dir, "panoptic_labels.pt"))
+    tsdf_volume.save_instance(os.path.join(save_dir, "panoptic_labels.pt"))

@@ -29,3 +29,6 @@ $HOME/.conda/envs/sp3/bin/python fusion.py --pipeline tsdf_panoptic --pipeline_d
 
 # test panoptic fusion with grounded sam
 $HOME/.conda/envs/sp3/bin/python fusion.py --pipeline tsdf_panoptic --pipeline_device cuda:1 --start 0 --end 100 --stride 1 --save_dir $HOME/Experiments/feature-instance-fusion/debug --extractor grounded_sam --extractor_device cuda:0 --panoptic_threshold 0.25 --tsdf_depth_type mesh_rc --save_extraction
+
+# test panoptic fusion with mask rcnn: 16.41 it/s extraction 21.53it/s fusion
+$HOME/.conda/envs/sp3/bin/python fusion.py --pipeline tsdf_panoptic --pipeline_device cuda:1 --start 0 --end 100 --stride 1 --save_dir $HOME/Experiments/feature-instance-fusion/debug --extractor mask_rcnn --extractor_device cuda:0 --panoptic_threshold 0.25 --tsdf_depth_type mesh_rc --save_extraction
