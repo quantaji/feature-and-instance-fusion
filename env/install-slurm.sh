@@ -8,6 +8,9 @@ python -m venv ${SCRATCH}/.python_venv/feat-seg-fusion --upgrade-deps
 # actiavte
 source "${SCRATCH}/.python_venv/feat-seg-fusion/bin/activate"
 
+export CUDA_PATH=$CUDA_HOME
+export CUDA_HOST_COMPILER=$(which gcc)
+
 # install dependency
 ${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install -r env/req-basic.txt --cache-dir ${SCRATCH}/pip_cache
 ${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install -r env/req-captioning.txt --cache-dir ${SCRATCH}/pip_cache
