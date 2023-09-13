@@ -60,7 +60,7 @@ def tsdf_feature(args: ProgramArgs):
     tsdf_volume.reset_feature(
         dim=args.feat_dim,
         include_var=args.tsdf_feat_include_var,
-        dtype=getattr(torch, args.feature_dtype, None),
+        dtype=getattr(torch, args.feature_dtype) if args.feature_dtype is not None else None,
     )
 
     # start fusion
