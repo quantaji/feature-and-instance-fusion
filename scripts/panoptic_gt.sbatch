@@ -12,7 +12,7 @@ module load gcc/8.2.0 python_gpu/3.10.4 cuda/11.8.0 git-lfs/2.3.0 git/2.31.1 eth
 PYTHON=${SCRATCH}/.python_venv/feat-seg-fusion/bin/python
 SCANNET_ROOT=/cluster/project/cvg/weders/data/scannet
 
-SCENES=(scene0000_00 scene0645_01 scene0608_00 scene0643_00 scene0488_01)
+SCENES=(scene0000_00 scene0645_01 scene0643_00 scene0488_01)
 for SCENE in "${SCENES[@]}"; do
     echo $SCENE
     SAVE_DIR=${SCRATCH}/Experiments/feature-instance-fusion/scannet_${SCENE}
