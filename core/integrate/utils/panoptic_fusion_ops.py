@@ -34,6 +34,7 @@ def instance_2d_map_3d(
     instance_3d_unique, instance_3d_compact = torch.unique(
         voxel_instance[layer_vol_idx],
         return_inverse=True,
+        sorted=True,
     )
     masks_3d = (torch.nn.functional.one_hot(instance_3d_compact, instance_3d_unique.shape[0]) > 0).movedim(0, 1).unsqueeze(0)  # 1, n_global_labels, n_pixels
 

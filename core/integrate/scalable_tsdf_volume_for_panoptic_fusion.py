@@ -236,20 +236,15 @@ class PanopticFusionScalableTSDFVolume(ScalableTSDFVolume):
         # extract colors, dense features is very expensive, so I choose to use the sparse array
         hash_selected = discrete2hash(discretize_3d(torch.from_numpy(verts.copy()).to(device), voxel_size=self._voxel_size, voxel_origin=self._vol_origin.to(device)))
 
-        hash_new, indices = torch.cat([self._voxel_hash.to(device), hash_selected], dim=0).unique(return_inverse=True)
+        hash_new, indices = torch.cat([self._voxel_hash.to(device), hash_selected], dim=0).unique(return_inverse=True, sorted=True)
         idx_old, idx_selected = indices[: self.num_voxel], indices[self.num_voxel :]
         new_n_vox = hash_new.size(0)
 
-        if self.num_voxel < new_n_vox:
-            label_merge = torch.zeros(size=(new_n_vox,), dtype=torch.int64, device=device)
-            label_merge[idx_old] = self._instance.to(device)
+        label_merge = torch.zeros(size=(new_n_vox,), dtype=torch.int64, device=device)
+        label_merge[idx_old] = self._instance.to(device)
 
-            label_w_sum_merge = self._instance_weight_init + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
-            label_w_sum_merge[idx_old] = self._instance_w_sum.to(device)
-
-        else:
-            label_merge = self._instance.to(device)
-            label_w_sum_merge = self._instance_w_sum.to(device)
+        label_w_sum_merge = self._instance_weight_init + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
+        label_w_sum_merge[idx_old] = self._instance_w_sum.to(device)
 
         labels = label_merge[idx_selected].cpu().numpy()
         labels_w_sum = label_w_sum_merge[idx_selected].cpu().numpy()

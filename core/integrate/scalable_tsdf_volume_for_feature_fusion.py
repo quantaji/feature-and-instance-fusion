@@ -236,29 +236,21 @@ class FeatureFusionScalableTSDFVolume(ScalableTSDFVolume):
         # extract colors, dense features is very expensive, so I choose to use the sparse array
         hash_selected = discrete2hash(discretize_3d(torch.from_numpy(verts.copy()).to(device), voxel_size=self._voxel_size, voxel_origin=self._vol_origin.to(device)))
 
-        hash_new, indices = torch.cat([self._voxel_hash.to(device), hash_selected], dim=0).unique(return_inverse=True)
+        hash_new, indices = torch.cat([self._voxel_hash.to(device), hash_selected], dim=0).unique(return_inverse=True, sorted=True)
         idx_old, idx_selected = indices[: self.num_voxel], indices[self.num_voxel :]
         new_n_vox = hash_new.size(0)
 
-        if self.num_voxel < new_n_vox:
-            feat_merge = torch.zeros(size=(new_n_vox, self._feat_dim), dtype=torch.float32, device=device)
-            feat_merge[idx_old] = self._feat.to(device)
+        feat_merge = torch.zeros(size=(new_n_vox, self._feat_dim), dtype=torch.float32, device=device)
+        feat_merge[idx_old] = self._feat.to(device)
+        feat_w_sum_merge = self._feat_weight_init + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
+        feat_w_sum_merge[idx_old] = self._feat_w_sum.to(device)
 
-            feat_w_sum_merge = self._feat_weight_init + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
-            feat_w_sum_merge[idx_old] = self._feat_w_sum.to(device)
+        if self._include_var:
+            feat_sqare_merge = torch.zeros(size=(new_n_vox, self._feat_dim), dtype=torch.float32, device=device)
+            feat_sqare_merge[idx_old] = self._feat_square.to(device)
 
-            if self._include_var:
-                feat_sqare_merge = torch.zeros(size=(new_n_vox, self._feat_dim), dtype=torch.float32, device=device)
-                feat_sqare_merge[idx_old] = self._feat_square.to(device)
-
-                feat_w2_sum_merge = (self._feat_weight_init) ** 2 + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
-                feat_w2_sum_merge[idx_old] = self._feat_w2_sum.to(device)
-        else:
-            feat_merge = self._feat.to(device)
-            feat_w_sum_merge = self._feat_w_sum.to(device)
-            if self._include_var:
-                feat_sqare_merge = self._feat_square.to(device)
-                feat_w2_sum_merge = self._feat_w2_sum.to(device)
+            feat_w2_sum_merge = (self._feat_weight_init) ** 2 + torch.zeros(size=(new_n_vox,), dtype=torch.float32, device=device)
+            feat_w2_sum_merge[idx_old] = self._feat_w2_sum.to(device)
 
         feats = feat_merge[idx_selected].cpu().numpy()
         feats_w_sum = feat_w_sum_merge[idx_selected].cpu().numpy()
