@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #SBATCH --job-name="clip-fusion"
 #SBATCH --output=%j.out
-#SBATCH --time=3:00:00
+#SBATCH --time=4:00:00
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=64G
 #SBATCH --tmp=32G

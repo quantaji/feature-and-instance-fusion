@@ -7,6 +7,7 @@ from ..extractor import (
     GroundTruthSemanticExtractor,
     LSegFeatureExtractor,
     MaskRCNNMaskExtractor,
+    RandomFeatureExtractor,
     RandomGroundedSAMFeatureExtractor,
     RandomSAMFeatureExtractor,
     SAMMaskExtractor,
@@ -49,6 +50,12 @@ def get_extractor(args: ProgramArgs) -> BaseExtractor:
     elif args.extractor == "mask_rcnn":
         return MaskRCNNMaskExtractor(
             mask_rcnn_ckpt=args.mask_rcnn_ckpt,
+            device=args.extractor_device,
+        )
+
+    elif args.extractor == "random":
+        return RandomFeatureExtractor(
+            feat_dim=args.feat_dim,
             device=args.extractor_device,
         )
 

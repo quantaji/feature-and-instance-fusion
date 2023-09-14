@@ -2,7 +2,7 @@ from typing import Dict
 
 import torch
 from PIL import Image
-from torchvision.transforms.functional import pil_to_tensor, to_tensor
+from torchvision.transforms.functional import pil_to_tensor
 
 from ..integrate.utils.misc import instance_id_to_one_hot_mask
 from .base import BaseExtractor
