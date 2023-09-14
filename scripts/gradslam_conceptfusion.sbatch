@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=64G
 #SBATCH --tmp=32G
-#SBATCH --gpus=v100:1 
+#SBATCH --gpus=a100_80gb:1 
 
 # vram demand ... rtx_39090 v100 a100-pcie-40gb a100_80gb
 
@@ -17,4 +17,4 @@ SCANNET_ROOT=/cluster/project/cvg/weders/data/scannet
 SCENE=scene0011_00
 SAVE_DIR=${SCRATCH}/Experiments/feature-instance-fusion/scannet_${SCENE}
 
-$PYTHON fusion.py --dataset_dir $SCANNET_ROOT --scan_id $SCENE --pipeline gradslam_feature --pipeline_device cuda:0 --start 0 --end -1 --stride 1 --save_dir $SAVE_DIR --extractor conceptfusion --feature_dtype float --extractor_device cuda:0 --save_extraction --output_height 240 --output_width 320 # this 
+$PYTHON fusion.py --dataset_dir $SCANNET_ROOT --scan_id $SCENE --pipeline gradslam_feature --pipeline_device cuda:0 --start 0 --end -1 --stride 1 --save_dir $SAVE_DIR --extractor conceptfusion --feature_dtype float --extractor_device cuda:0 --save_extraction --output_height 120 --output_width 160 # this 
