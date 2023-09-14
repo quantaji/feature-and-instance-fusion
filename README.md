@@ -3,5 +3,7 @@
 ## Setup Environments
 
 
-TODO:
-- integrate mask-rcnn from detectron2
+## sync command
+```sh
+rsync --ignore-existing -r -v --progress -e ssh guanji@euler.ethz.ch:/cluster/scratch/guanji/Experiments/feature-instance-fusion ./Experiments/
+```
