@@ -84,7 +84,7 @@ class ScalableTSDFVolume:
         )
 
     def load(self, pth: str):
-        stat_dict = torch.load(pth)
+        stat_dict = torch.load(pth, map_location=self.device)
         self._voxel_hash = stat_dict["voxel_hash"].to(self.device)
         self._voxel_size = stat_dict["voxel_size"]
         self._vol_origin = stat_dict["voxel_origin"].to(self.device)

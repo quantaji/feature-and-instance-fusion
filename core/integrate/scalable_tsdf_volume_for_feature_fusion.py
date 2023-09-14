@@ -95,7 +95,7 @@ class FeatureFusionScalableTSDFVolume(ScalableTSDFVolume):
         torch.save(obj=feats_obj, f=pth)
 
     def load_feats(self, pth: str):
-        stat_dict = torch.load(pth)
+        stat_dict = torch.load(pth, map_location=self.device)
 
         self._feat = stat_dict["feat"].to(self.device)
         self._feat_w_sum = stat_dict["feat_w_sum"].to(self.device)

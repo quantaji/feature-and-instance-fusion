@@ -267,7 +267,7 @@ class PanopticFusionScalableTSDFVolume(ScalableTSDFVolume):
         )
 
     def load_instance(self, pth: str):
-        stat_dict = torch.load(pth)
+        stat_dict = torch.load(pth, map_location=self.device)
         self._instance = stat_dict["instance_label"].to(self.device)
         self._instance_w_sum = stat_dict["instance_w_sum"].to(self.device)
         self._instance_label_num = stat_dict["instance_num"]
