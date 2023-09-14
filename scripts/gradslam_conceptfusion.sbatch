@@ -5,7 +5,9 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=64G
 #SBATCH --tmp=32G
-#SBATCH --gpus=rtx_3090:1
+#SBATCH --gpus=v100:1 
+
+# vram demand ... rtx_39090 v100 a100-pcie-40gb a100_80gb
 
 module load gcc/8.2.0 python_gpu/3.10.4 cuda/11.8.0 git-lfs/2.3.0 git/2.31.1 eth_proxy
 

@@ -19,7 +19,7 @@ ${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install -r env/req-groungded-sa
 ${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install -r env/req-mask-rcnn.txt --cache-dir ${SCRATCH}/pip_cache
 
 # open3d
-${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install -U $HOME/open3d-wheels/minimal/open3d_cpu-0.17.0-cp310-cp310-manylinux_2_17_x86_64.whl
+${SCRATCH}/.python_venv/feat-seg-fusion/bin/pip3 install "https://github.com/quantaji/open3d-manylinux2014/releases/download/0.17.0/open3d_cpu-0.17.0-0minimal-cp310-cp310-manylinux_2_17_x86_64.whl"
 
 # deactivate
 deactivate
