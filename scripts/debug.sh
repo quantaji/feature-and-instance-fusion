@@ -38,13 +38,20 @@ $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_panoptic 
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline gradslam_feature --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir $HOME/Experiments/feature-instance-fusion/debug --extractor random --feature_dtype float --extractor_device cuda:0 --output_height 240 --output_width 320
 
 # kmeans_labels
-$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 512 --kmeans_extractor random_sam
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
 
-$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0645_01 --kmeans_cluster_num 512 --kmeans_extractor random_sam
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0645_01 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
 
-$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0643_00 --kmeans_cluster_num 512 --kmeans_extractor random_sam
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0643_00 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
 
-$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0488_01 --kmeans_cluster_num 512 --kmeans_extractor random_sam
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0488_01 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
 
 # patch correspondence, 3it/s
-$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline patch_corres --pipeline_device cuda:1 --start 0 --end 100 --stride 1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 512 --kmeans_extractor random_sam --extractor grounded_sam
+scene=scene0000_00
+# scene=scene0645_01
+# scene=scene0643_00
+# scene=scene0488_01
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline patch_corres --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --scan_id $scene --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_sam --extractor grounded_sam
+
+# test building graph
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline build_graph --pipeline_device cuda:1 --save_dir /storage/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor random_sam --extractor grounded_sam

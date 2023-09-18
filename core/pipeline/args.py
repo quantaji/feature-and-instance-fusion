@@ -32,9 +32,9 @@ class ProgramArgs:
     lseg_ckpt: str = str(Path.home() / "Models/LSeg/lseg_minimal_e200.ckpt")
     # grounded-sam related
     grounding_dino_config_pth: str = "./config/grounding_dino_config/GroundingDINO_SwinT_OGC.py"
-    grounding_dino_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / Path("Models/GroundingDINO/groundingdino_swint_ogc.pth"))
-    ram_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / Path("Models/RAM_Tag2Text/ram_swin_large_14m.pth"))
-    sam_hq_ckpt: str = str(os.environ.get("SCRATCH", Path.home())  / Path("Models/SAM_HQ/sam_hq_vit_h.pth"))
+    grounding_dino_ckpt: str = str(os.environ.get("SCRATCH", Path.home()) / Path("Models/GroundingDINO/groundingdino_swint_ogc.pth"))
+    ram_ckpt: str = str(os.environ.get("SCRATCH", Path.home()) / Path("Models/RAM_Tag2Text/ram_swin_large_14m.pth"))
+    sam_hq_ckpt: str = str(os.environ.get("SCRATCH", Path.home()) / Path("Models/SAM_HQ/sam_hq_vit_h.pth"))
     # mask rcnn
     mask_rcnn_ckpt: str = None  # none means use default
     # random feature related
@@ -67,5 +67,15 @@ class ProgramArgs:
     panoptic_threshold: float = 0.25
 
     # kmeans related
-    kmeans_cluster_num: int = 512
-    kmeans_extractor: str = 'random_grounded_sam'
+    kmeans_cluster_num: int = 1024
+    kmeans_extractor: str = "random_grounded_sam"
+
+    # building graph
+    graph_weight_method: str = "SVP"  # S means filter by voxel absolute size, V means fileter by voxel fraction, P means filter by pixel fraction
+    graph_voxel_size_threshold: int = 100  # patches with voxel larger than this amount is safe
+    graph_voxel_frac_threshold: float = 0.3  # fractions of voxel of this patch appears in this frame above this threshold is save
+    graph_pixel_frac_threshold: float = 0.0009  # number of pixels a patch takes in total frame
+
+    # from graph_get_connected_componets
+    log_ratio_threshold: float = 2.0
+    positive_threshold: float = 15.0

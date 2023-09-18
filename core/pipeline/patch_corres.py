@@ -6,13 +6,7 @@ from tqdm import tqdm
 from ..extractor.utils import isolate_boolean_masks
 from ..integrate import ScalableTSDFVolume
 from ..integrate.utils.misc import intrinsic_rescale
-from ..integrate.utils.tsdf_ops import (
-    discrete2world,
-    filter_voxel_from_depth_and_image_and_get_pixels,
-    hash2discrete,
-    inhomo2homo,
-    pixel_voxel_corres_given_depth,
-)
+from ..integrate.utils.tsdf_ops import discrete2world, hash2discrete, inhomo2homo, pixel_voxel_corres_given_depth
 from .args import ProgramArgs
 from .get_dataset import get_dataset
 from .get_extractor import get_extractor
@@ -47,15 +41,6 @@ def patch_corres(args: ProgramArgs):
         args.output_width = dataset["scan_dataset"].color_width
 
     print("Performing KMeans Patch and 2D Segmentations correspondence calculation...")
-
-    # word coordinate is fixed
-    world_coord = inhomo2homo(
-        discrete2world(
-            discrete_coord=hash2discrete(tsdf_volume._voxel_hash),
-            voxel_size=tsdf_volume.voxel_size,
-            voxel_origin=tsdf_volume._vol_origin,
-        )
-    )
 
     # we assume the features is already calculated, so we only read them from file
     for idx in tqdm(range(len(dataset["scan_dataset"]))[args.start : args.end : args.stride]):
