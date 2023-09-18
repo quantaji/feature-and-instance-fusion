@@ -11,7 +11,7 @@ class ProgramArgs:
     scan_id: str = "scene0000_00"
 
     # extractor
-    extractor: str = "color"  # ["color", "conceptfusion", "grounded_sam", "lseg", "mask_rcnn",  "random_grounded_sam", "random_sam", "sam", "gt_instance", "gt_semantic" ]
+    extractor: str = "color"  # ["color", "conceptfusion", "grounded_sam", "lseg", "mask_rcnn",  "random_grounded_sam", "random_sam", "sam", "gt_instance", "gt_semantic"]
     extractor_device: str = "cpu"
     save_extraction: bool = False
     output_height: int = None  # none means unchanged
@@ -44,7 +44,7 @@ class ProgramArgs:
     gt_instance_background_id: int = 0
 
     # pipeline related
-    pipeline: str = "tsdf"  # ["tsdf", "tsdf_feature", "tsdf_panoptic", "tsdf_guided_panoptic", "gradslam_feature", "kmeans", "connectivity_graph"]
+    pipeline: str = "tsdf"  # ["tsdf", "tsdf_feature", "tsdf_panoptic", "tsdf_guided_panoptic", "gradslam_feature", "kmeans", "connectivity_graph", "kmeans"]
     ## If a pipeline use 2D frames, then this is needed:
     start: int = 0
     end: int = -1
@@ -65,3 +65,7 @@ class ProgramArgs:
 
     # panoptic fusion config
     panoptic_threshold: float = 0.25
+
+    # kmeans related
+    kmeans_cluster_num: int = 512
+    kmeans_extractor: str = 'random_grounded_sam'
