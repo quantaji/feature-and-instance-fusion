@@ -1,8 +1,10 @@
 import os
 
+import torch
+
 from ..integrate import FeatureFusionScalableTSDFVolume
-from .args import ProgramArgs
 from ..labeler import KMeansLabeler
+from .args import ProgramArgs
 
 
 def kmeans(args: ProgramArgs):
@@ -19,7 +21,7 @@ def kmeans(args: ProgramArgs):
     # kmeans
     labeler = KMeansLabeler(K=args.kmeans_cluster_num, device=args.pipeline_device)
     labels = labeler.feat_to_label(feats=tsdf_volume._feat).detach().cpu()
--+
+
     # save
     save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor)
     os.makedirs(save_dir, exist_ok=True)

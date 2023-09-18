@@ -69,6 +69,10 @@ def tsdf_feature(args: ProgramArgs):
         # use model hear
         extractor.load_model()
 
+    if args.output_height is None or args.output_width is None:
+        args.output_height = dataset["scan_dataset"].color_height
+        args.output_width = dataset["scan_dataset"].color_width
+
     print("Performing TSDF feature fusion")
     for idx in tqdm(range(len(dataset["scan_dataset"]))[args.start : args.end : args.stride]):
         if args.save_extraction:

@@ -101,7 +101,7 @@ class BaseExtractor:
         output_height: int = None,
         output_width: int = None,
         device: str = None,
-    ):
+    ) -> torch.Tensor:
         assert "masks" in results.keys()
 
         masks = results["masks"]

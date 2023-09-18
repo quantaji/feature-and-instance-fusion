@@ -26,6 +26,7 @@ def isolate_boolean_masks(boolean_masks: np.ndarray):
     """
     Some times, the masks may intersect, we want the most isolated, fractalrized masks. The returned mask is integered.
     for a binary masks of shape (n, H, W). The return is a interger mask of shape (H, W)
+    Note that, numpy always sort in .unique(), and the empty string is always the first one, which is array([b''], dtype='|S7') (the 7 here is an example number of mask)
     """
     return np.unique(
         np.moveaxis(boolean_masks, 0, -1).copy().view(f"a{boolean_masks.shape[0]}"),

@@ -64,6 +64,10 @@ def tsdf_panoptic(args: ProgramArgs):
     save_dir = os.path.join(args.save_dir, "tsdf_panoptic_" + args.extractor)
     os.makedirs(save_dir, exist_ok=True)
 
+    if args.output_height is None or args.output_width is None:
+        args.output_height = dataset["scan_dataset"].color_height
+        args.output_width = dataset["scan_dataset"].color_width
+
     print("Performing TSDF panoptic fusion")
     for idx in tqdm(range(len(dataset["scan_dataset"]))[args.start : args.end : args.stride]):
         if args.save_extraction:
