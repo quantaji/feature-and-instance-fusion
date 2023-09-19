@@ -7,7 +7,6 @@ from tqdm import tqdm
 from ..integrate import ScalableTSDFVolume
 from ..integrate.utils.tsdf_ops import discrete2hash, hash2discrete
 from .args import ProgramArgs
-from .get_dataset import get_dataset
 
 
 def build_graph(args: ProgramArgs):
@@ -65,19 +64,14 @@ def build_graph(args: ProgramArgs):
     voxel_sizes = kmeans_labels.bincount(minlength=args.kmeans_cluster_num).cpu().numpy()
     voxel_size_conf = np.clip(voxel_sizes / args.graph_voxel_size_threshold, 0, 1)
 
-    patch_corres_save_dir = os.path.join(args.save_dir, "kmeans_patch_corres_" + args.extractor)
-
-    dataset = get_dataset(
-        dataset_name=args.dataset_name,
-        dataset_dir=args.dataset_dir,
-        scan_id=args.scan_id,
-    )
+    patch_corres_save_dir = os.path.join(args.save_dir, "patch_corres_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor)
 
     positive_connectivity = np.zeros(shape=(args.kmeans_cluster_num, args.kmeans_cluster_num), dtype=float)
     negative_connectivity = np.zeros(shape=(args.kmeans_cluster_num, args.kmeans_cluster_num), dtype=float)
 
-    for idx in tqdm(range(len(dataset["scan_dataset"]))[args.start : args.end : args.stride]):
-        frame_info = torch.load(os.path.join(patch_corres_save_dir, "{:>06d}.pt".format(idx)))
+    for name in tqdm(os.listdir(patch_corres_save_dir)):
+        frame_info = torch.load(os.path.join(patch_corres_save_dir, name))
+
         frame_mask_id = -1 + np.zeros(shape=(args.kmeans_cluster_num,), dtype=int)
         frame_voxel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num,), dtype=float)
         frame_pixel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num,), dtype=float)
@@ -115,7 +109,7 @@ def build_graph(args: ProgramArgs):
     # saving
     print("Saving")
     saving_name = args.graph_weight_method if args.graph_weight_method != "" else "binary"
-    save_dir = os.path.join(args.save_dir, "connectivity_graph_" + saving_name)
+    save_dir = os.path.join(args.save_dir, "connectivity_graph_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor + "_" + saving_name)
     os.makedirs(save_dir, exist_ok=True)
 
     np.save(os.path.join(save_dir, "border_counts.npy"), border_counts.cpu().numpy())

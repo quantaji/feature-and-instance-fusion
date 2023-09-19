@@ -33,7 +33,7 @@ def patch_corres(args: ProgramArgs):
     kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor)
     kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "kmeans_labels.pt")).to(args.pipeline_device)
 
-    save_dir = os.path.join(args.save_dir, "kmeans_patch_corres_" + args.extractor)
+    save_dir = os.path.join(args.save_dir, "patch_corres_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor)
     os.makedirs(save_dir, exist_ok=True)
 
     if args.output_height is None or args.output_width is None:

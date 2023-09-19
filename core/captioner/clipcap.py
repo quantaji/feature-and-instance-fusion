@@ -19,17 +19,17 @@ class ClipCapCaptioner(BaseCaptioner):
 
     def load_model(self):
         self.clipcap = ClipCaptionModel(
-            prefix_length=40,
-            clip_length=40,
-            prefix_size=512,
-            num_layers=8,
-            mapping_type="transformer",
+            prefix_length=10,
+            # clip_length=40,
+            # prefix_size=512,
+            # num_layers=8,
+            # mapping_type="transformer",
         )
         self.clipcap.load_state_dict(torch.load(self.clipcap_ckpt, map_location="cpu"), strict=False)
         self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
         self.clipcap = self.clipcap.eval().to(self.device)
 
-    @torch.no_grad
+    @torch.no_grad()
     def get_caption(self, feat: torch.Tensor, normalize: bool = True) -> str:
         if normalize:
             feat = f.normalize(feat, dim=-1)
