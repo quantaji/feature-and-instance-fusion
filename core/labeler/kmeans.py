@@ -16,7 +16,7 @@ class KMeansLabeler(BaseLabeler):
         self.K = K
         self.device = device
 
-        self.kmeans = KMeans(n_clusters=K, mode="euclidean", max_iter=2048, verbose=1)
+        self.kmeans = KMeans(n_clusters=K, mode="euclidean", max_iter=2048, verbose=2)
 
     def feat_to_label(
         self,

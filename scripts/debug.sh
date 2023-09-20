@@ -81,3 +81,7 @@ $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline graph_connect 
 # guided panoptic, 4.3 it/s
 scene=scene0000_00
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_guided_panoptic --pipeline_device cuda:1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_grounded_sam --extractor grounded_sam --save_extraction --extractor_device cuda:0 --tsdf_depth_type mesh_rc
+
+# conceptfusion tsdf
+scene=scene0000_00
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_feature --pipeline_device cuda:0  --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene}  --start 0 --end -1 --stride 1 --save_extraction --output_height 968 --output_width 1298 --extractor conceptfusion
