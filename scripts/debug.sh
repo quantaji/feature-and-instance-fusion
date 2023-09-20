@@ -59,8 +59,16 @@ $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline patch_corres -
 # done
 
 # test building graph
-scene=scene0000_00
+# scene=scene0000_00
 # scene=scene0645_01
 # scene=scene0643_00
-# scene=scene0488_01
+scene=scene0488_01
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline build_graph --pipeline_device cuda:1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_grounded_sam --extractor grounded_sam
+
+
+# other kmeans for plotting
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
+
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cpu --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor lseg_pruned
+
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor conceptfusion
