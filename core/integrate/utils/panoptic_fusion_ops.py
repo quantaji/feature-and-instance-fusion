@@ -95,3 +95,63 @@ def instance_2d_map_3d(
     map_2d_3d = temp_map_2d_3d[1:].gather(0, index.argsort(0))  # the mapping acoording to original ordering
 
     return mapped_img, map_2d_3d, new_num_3d_instance
+
+
+@torch.no_grad()
+def guided_instance_2d_map_3d(
+    masks: Tensor,
+    guided_voxel_label: Tensor,
+    layer_px: Tensor,
+    layer_py: Tensor,
+    layer_vol_idx: Tensor,
+):
+    """
+    This funciton builds a correspondence between 2D instance id to the global 3D instance id. The guided_voxel_label is the "guidance" and is assumed to be ground truth. The guided_voxel_label is assumed to have minimal label of 1, instead of 0, to avoid interference with un classified id=0
+
+        masks: one hot boolean tensor of shape (n_masks, H, W), we assume that the background never appears in this tensor, every mask is an instane mask
+        voxel_instance: the 3d global instance id of voxels
+    """
+    device = guided_voxel_label.device
+    H_m, W_m = masks.shape[-2], masks.shape[-1]
+
+    masks_2d = masks[:, layer_py, layer_px]  # n_2d_masks, n_pixels
+
+    # it is not efficient to map globel 3d instance id to its one-hot space, because there are many that is not in this view, so we get the unique value of it first
+    instance_3d_unique, instance_3d_compact = torch.unique(
+        guided_voxel_label[layer_vol_idx],
+        return_inverse=True,
+        sorted=True,
+    )
+    masks_3d = (torch.nn.functional.one_hot(instance_3d_compact, instance_3d_unique.shape[0]) > 0).movedim(0, 1).unsqueeze(0)  # 1, n_global_labels, n_pixels
+
+    # compute IoU
+    # this step is very memory demanding...
+    # a solution is to use a for loop...
+    intersect = torch.cat(
+        [(masks_3d * mask_2d.reshape(1, 1, -1)).count_nonzero(dim=-1) for mask_2d in masks_2d],
+        dim=0,
+    )
+    union = torch.cat(
+        [(masks_3d + mask_2d.reshape(1, 1, -1)).count_nonzero(dim=-1) for mask_2d in masks_2d],
+        dim=0,
+    )
+    IoU = intersect / union  # (n_2d_masks, n_global_labels)
+    # del masks_obs
+
+    map_2d_3d: Tensor = instance_3d_unique[IoU.argmax(dim=1)]
+
+    # del IoU, instance_3d_unique
+    temp_map_2d_3d = torch.tensor([0] + map_2d_3d.tolist(), dtype=torch.int64, device=device)  # add zero at the beginning, so that un assigned pixels also have their position
+
+    # then get a image of update label
+    mapped_img = temp_map_2d_3d[
+        torch.cat(
+            [
+                torch.zeros(size=(1, H_m, W_m), dtype=torch.int64, device=device),
+                masks,
+            ],
+            dim=0,
+        ).argmax(dim=0)
+    ]
+
+    return mapped_img, map_2d_3d

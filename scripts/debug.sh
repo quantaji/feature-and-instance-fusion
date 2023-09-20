@@ -33,8 +33,7 @@ $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_panoptic 
 # test panoptic fusion with mask rcnn: 16.41 it/s extraction 21.53it/s fusion
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_panoptic --pipeline_device cuda:1 --start 0 --end 100 --stride 1 --save_dir $HOME/Experiments/feature-instance-fusion/debug --extractor mask_rcnn --extractor_device cuda:0 --panoptic_threshold 0.25 --tsdf_depth_type mesh_rc --save_extraction
 
-
-# test gradslam vram 3s/it 2373 * 3 / 3600 =  2h 
+# test gradslam vram 3s/it 2373 * 3 / 3600 =  2h
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline gradslam_feature --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir $HOME/Experiments/feature-instance-fusion/debug --extractor random --feature_dtype float --extractor_device cuda:0 --output_height 240 --output_width 320
 
 # kmeans_labels
@@ -65,10 +64,20 @@ $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline patch_corres -
 scene=scene0488_01
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline build_graph --pipeline_device cuda:1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_grounded_sam --extractor grounded_sam
 
-
 # other kmeans for plotting
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor random_sam
 
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cpu --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor lseg_pruned
 
 $HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline kmeans --pipeline_device cuda:1 --start 0 --end -1 --stride 1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_scene0000_00 --kmeans_cluster_num 1024 --kmeans_extractor conceptfusion
+
+# graph connect
+scene=scene0000_00
+# scene=scene0645_01
+# scene=scene0643_00
+# scene=scene0488_01
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline graph_connect --pipeline_device cuda:1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_grounded_sam --extractor grounded_sam
+
+# guided panoptic, 4.3 it/s
+scene=scene0000_00
+$HOME/.conda/envs/feat-seg-fusion/bin/python fusion.py --pipeline tsdf_guided_panoptic --pipeline_device cuda:1 --save_dir /home/quanta/Experiments/feature-instance-fusion/scannet_${scene} --kmeans_cluster_num 1024 --kmeans_extractor random_grounded_sam --extractor grounded_sam --save_extraction --extractor_device cuda:0 --tsdf_depth_type mesh_rc

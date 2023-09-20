@@ -1,18 +1,10 @@
-from typing import List, Optional, Union
-
 import numpy as np
 import torch
-from skimage import measure
 from torch import Tensor
 
 from .scalable_tsdf_volume import ScalableTSDFVolume
 from .utils.panoptic_fusion_ops import instance_2d_map_3d
-from .utils.tsdf_ops import (
-    depth_to_voxel_layer,
-    filter_voxel_from_depth_and_get_tsdf,
-    filter_voxel_from_depth_and_image_and_get_pixels,
-    pixel_voxel_corres_given_depth,
-)
+from .utils.tsdf_ops import filter_voxel_from_depth_and_image_and_get_pixels, pixel_voxel_corres_given_depth
 from .utils.voxel_ops import discrete2hash, discrete2world, discretize_3d, hash2discrete, inhomo2homo
 from .utils.voxel_ray_cast import voxel_ray_cast
 
