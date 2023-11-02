@@ -68,6 +68,7 @@ class ProgramArgs:
 
     # kmeans related
     kmeans_cluster_num: int = 1024
+    kmeans_position_factor: float = 0.0
     kmeans_extractor: str = "random_grounded_sam"
 
     # building graph
@@ -79,3 +80,7 @@ class ProgramArgs:
     # from graph_get_connected_componets
     log_ratio_threshold: float = 2.0
     positive_threshold: float = 1.0
+
+    # label outlier removal
+    label_outlier_removal_nb_neighbors: int = 20
+    label_outlier_removal_std_ratio: float = 2.0

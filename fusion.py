@@ -5,6 +5,7 @@ from core.pipeline.build_graph import build_graph
 from core.pipeline.gradslam_feature import gradslam_feature
 from core.pipeline.graph_connect import graph_connect
 from core.pipeline.kmeans import kmeans
+from core.pipeline.outlier_removal import outlier_removal
 from core.pipeline.patch_corres import patch_corres
 from core.pipeline.tsdf import tsdf
 from core.pipeline.tsdf_feature import tsdf_feature
@@ -40,6 +41,9 @@ if __name__ == "__main__":
 
     elif args.pipeline == "graph_connect":
         graph_connect(args=args)
+
+    elif args.pipeline == "outlier_removal":
+        outlier_removal(args=args)
 
     else:
         raise NotImplementedError
