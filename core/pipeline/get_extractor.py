@@ -38,6 +38,7 @@ def get_extractor(args: ProgramArgs) -> BaseExtractor:
             grounding_dino_config_pth=args.grounding_dino_config_pth,
             grounding_dino_ckpt=args.grounding_dino_ckpt,
             sam_hq_ckpt=args.sam_hq_ckpt,
+            tag_set=args.grounded_sam_tag_set,
             device=args.extractor_device,
         )
 
@@ -66,6 +67,7 @@ def get_extractor(args: ProgramArgs) -> BaseExtractor:
             grounding_dino_ckpt=args.grounding_dino_ckpt,
             sam_hq_ckpt=args.sam_hq_ckpt,
             feat_dim=args.feat_dim,
+            tag_set=args.grounded_sam_tag_set,
             device=args.extractor_device,
         )
 

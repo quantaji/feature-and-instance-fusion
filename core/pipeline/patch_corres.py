@@ -30,8 +30,8 @@ def patch_corres(args: ProgramArgs):
     extractor = get_extractor(args=args)
     extraction_save_dir = os.path.join(args.save_dir, extractor.name)
 
-    kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor)
-    kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "kmeans_labels.pt")).to(args.pipeline_device)
+    kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor + "_outlier_removed")
+    kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "labels.pt")).to(args.pipeline_device)
 
     save_dir = os.path.join(args.save_dir, "patch_corres_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor)
     os.makedirs(save_dir, exist_ok=True)
@@ -108,7 +108,7 @@ def patch_corres(args: ProgramArgs):
         # 5. number of pixels for most probable masks and the current voxel patch
 
         patch_corres = []
-        for i in range(args.kmeans_cluster_num):
+        for i in range(1, args.kmeans_cluster_num + 1):
             if (pix_patch_id == i).count_nonzero() > 0:
                 filt = pix_patch_id == i
 

@@ -23,8 +23,8 @@ def build_graph(args: ProgramArgs):
     )
     tsdf_volume.load(os.path.join(args.save_dir, "tsdf/tsdf_volume.pt"))
 
-    kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor)
-    kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "kmeans_labels.pt")).to(args.pipeline_device)
+    kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor + "_outlier_removed")
+    kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "labels.pt")).to(args.pipeline_device)
 
     # ! STEP 1: get border graph, whether two patchs are spacially attached to each other
     # get the neighbor hash
@@ -48,8 +48,11 @@ def build_graph(args: ProgramArgs):
 
     self_id = kmeans_labels[temp[:, 0]]
     neighbor_id = neighbor_patch_id[temp[:, 0], temp[:, 1]]
-    edge = self_id * args.kmeans_cluster_num + neighbor_id
-    border_counts = edge.bincount(minlength=args.kmeans_cluster_num**2).reshape(args.kmeans_cluster_num, args.kmeans_cluster_num)
+    edge = self_id * (args.kmeans_cluster_num + 1) + neighbor_id
+    border_counts = edge.bincount(minlength=(args.kmeans_cluster_num + 1) ** 2).reshape(args.kmeans_cluster_num + 1, args.kmeans_cluster_num + 1)
+    # change unknown id 's bounder count to 0
+    border_counts[0, :] = 0
+    border_counts[:, 0] = 0
 
     # ! STEP 2: build weighted positive and negative connectivity graph
     # the weight have some basic options
@@ -61,20 +64,20 @@ def build_graph(args: ProgramArgs):
     kmeans_save_dir = os.path.join(args.save_dir, "kmeans_" + args.kmeans_extractor)
     kmeans_labels: torch.Tensor = torch.load(os.path.join(kmeans_save_dir, "kmeans_labels.pt")).to(args.pipeline_device)
 
-    voxel_sizes = kmeans_labels.bincount(minlength=args.kmeans_cluster_num).cpu().numpy()
+    voxel_sizes = kmeans_labels.bincount(minlength=args.kmeans_cluster_num + 1).cpu().numpy()
     voxel_size_conf = np.clip(voxel_sizes / args.graph_voxel_size_threshold, 0, 1)
 
     patch_corres_save_dir = os.path.join(args.save_dir, "patch_corres_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor)
 
-    positive_connectivity = np.zeros(shape=(args.kmeans_cluster_num, args.kmeans_cluster_num), dtype=float)
-    negative_connectivity = np.zeros(shape=(args.kmeans_cluster_num, args.kmeans_cluster_num), dtype=float)
+    positive_connectivity = np.zeros(shape=(args.kmeans_cluster_num + 1, args.kmeans_cluster_num + 1), dtype=float)
+    negative_connectivity = np.zeros(shape=(args.kmeans_cluster_num + 1, args.kmeans_cluster_num + 1), dtype=float)
 
     for name in tqdm(os.listdir(patch_corres_save_dir)):
         frame_info = torch.load(os.path.join(patch_corres_save_dir, name))
 
-        frame_mask_id = -1 + np.zeros(shape=(args.kmeans_cluster_num,), dtype=int)
-        frame_voxel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num,), dtype=float)
-        frame_pixel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num,), dtype=float)
+        frame_mask_id = -1 + np.zeros(shape=(args.kmeans_cluster_num + 1,), dtype=int)
+        frame_voxel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num + 1,), dtype=float)
+        frame_pixel_frac_conf = np.zeros(shape=(args.kmeans_cluster_num + 1,), dtype=float)
         num_pixel = frame_info["masks"].shape[0] * frame_info["masks"].shape[1]
 
         for corres in frame_info["patch_corres"]:
@@ -85,7 +88,7 @@ def build_graph(args: ProgramArgs):
 
             frame_pixel_frac_conf[idx] = np.clip(corres["num_pixel_in_mask"] / num_pixel / args.graph_pixel_frac_threshold, 0, 1)
 
-        frame_weight = np.ones(shape=(args.kmeans_cluster_num,), dtype=float)
+        frame_weight = np.ones(shape=(args.kmeans_cluster_num + 1,), dtype=float)
 
         if "S" in args.graph_weight_method:
             frame_weight *= voxel_size_conf

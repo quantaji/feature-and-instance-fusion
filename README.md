@@ -15,3 +15,11 @@ to sync from local to server
 ```sh
 rsync --ignore-existing -r -v --progress -e ssh /home/quanta/Experiments/feature-instance-fusion guanji@euler.ethz.ch:/cluster/scratch/guanji/Experiments/ 
 ```
+
+
+#### sync dataset
+```sh
+# scene0011_00 scene0645_01 scene0643_00 scene0488_01
+rsync --ignore-existing -r -v --progress -e ssh guanji@euler.ethz.ch:/cluster/project/cvg/weders/data/scannet/scans/scene0488_01 /scratch/quanta/Datasets/ScanNet/scans/
+
+```
