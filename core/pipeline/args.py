@@ -85,3 +85,7 @@ class ProgramArgs:
     # label outlier removal
     label_outlier_removal_nb_neighbors: int = 20
     label_outlier_removal_std_ratio: float = 2.0
+    
+    # guided panoptic fusion parameter
+    guided_panoptic_Io2D_threshold: float = 0.5
+    

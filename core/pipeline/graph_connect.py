@@ -3,6 +3,7 @@ import os
 import numpy as np
 import open3d as o3d
 import torch
+from tqdm import tqdm
 from scipy.sparse import csgraph, csr_matrix
 
 from ..integrate import PanopticFusionScalableTSDFVolume
@@ -35,14 +36,29 @@ def graph_connect(args: ProgramArgs):
 
     # make the unknown class the smallest
     labels[labels == labels[0]] = -1
+    labels = torch.from_numpy(labels).unique(sorted=True, return_inverse=True)[1]
 
-    voxel_labels = torch.from_numpy(labels).to(device=args.pipeline_device, dtype=torch.int64)[kmeans_labels]
+    # merge all patched that has no patch mapping
+    counts = torch.zeros(size=(labels.unique().shape[0],), dtype=torch.int64)
+    patch_corres_save_dir = os.path.join(args.save_dir, "patch_corres_ext-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor)
+    for name in tqdm(os.listdir(patch_corres_save_dir)):
+        frame_info = torch.load(os.path.join(patch_corres_save_dir, name))
+
+        for corres in frame_info["patch_corres"]:
+            if corres["most_likely_maskid"] != 0:
+                counts[labels[corres["patch_id"]]] += 1
+
+    labels[counts[labels] == 0] = 0
+    labels = labels.unique(sorted=True, return_inverse=True)[1]
+
+    voxel_labels = labels.to(device=args.pipeline_device, dtype=torch.int64)[kmeans_labels]
     # also add a unique to reduce total amount
     voxel_labels = voxel_labels.unique(sorted=True, return_inverse=True)[1].detach().cpu()
 
     save_dir = os.path.join(args.save_dir, "graph_connect_etx-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor + "_" + graph_saving_name)
     os.makedirs(save_dir, exist_ok=True)
     torch.save(obj=voxel_labels, f=os.path.join(save_dir, "merged_labels.pt"))
+    torch.save(obj=labels, f=os.path.join(save_dir, "patch_to_label_mapping.pt"))
 
     # also save a ply file
     labeled_tsdf_volume = PanopticFusionScalableTSDFVolume(
@@ -68,3 +84,6 @@ def graph_connect(args: ProgramArgs):
 
     mesh.vertex_colors = o3d.utility.Vector3dVector(color)
     o3d.io.write_triangle_mesh(filename=os.path.join(save_dir, "colored_mash.ply"), mesh=mesh)
+    
+    # also save the voxel hash, since the guided panoptic fusion may use a different set of hash
+    torch.save(obj=labeled_tsdf_volume._voxel_hash, f=os.path.join(save_dir, "label_voxel_hash.pt"))

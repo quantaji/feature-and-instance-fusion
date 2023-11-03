@@ -10,6 +10,7 @@ from core.pipeline.patch_corres import patch_corres
 from core.pipeline.tsdf import tsdf
 from core.pipeline.tsdf_feature import tsdf_feature
 from core.pipeline.tsdf_guided_panoptic import tsdf_guided_panoptic
+from core.pipeline.tsdf_label_extend import tsdf_label_extend
 from core.pipeline.tsdf_panoptic import tsdf_panoptic
 
 if __name__ == "__main__":
@@ -44,6 +45,9 @@ if __name__ == "__main__":
 
     elif args.pipeline == "outlier_removal":
         outlier_removal(args=args)
+
+    elif args.pipeline == "tsdf_label_extend":
+        tsdf_label_extend(args=args)
 
     else:
         raise NotImplementedError

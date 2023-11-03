@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+import open3d as o3d
 import torch
 from tqdm import tqdm
 
@@ -50,13 +52,19 @@ def tsdf_guided_panoptic(args: ProgramArgs):
         margin=args.tsdf_margin,
         device=args.pipeline_device,
     )
-    tsdf_volume.load(os.path.join(args.save_dir, "tsdf/tsdf_volume.pt"))
+    if args.tsdf_unpruned:
+        tsdf_volume.load(os.path.join(args.save_dir, "tsdf/tsdf_volume_unpruned.pt"))
+    else:
+        tsdf_volume.load(os.path.join(args.save_dir, "tsdf/tsdf_volume.pt"))
     tsdf_volume.reset_instance()
 
     graph_saving_name = args.graph_weight_method if args.graph_weight_method != "" else "binary"
     graph_save_dir = os.path.join(args.save_dir, "graph_connect_etx-" + args.extractor + "_kmeans-ext-" + args.kmeans_extractor + "_" + graph_saving_name)
 
-    tsdf_volume.load_guidance_label(os.path.join(graph_save_dir, "merged_labels.pt"))
+    tsdf_volume.load_guidance_label(
+        hash_pth=os.path.join(graph_save_dir, "label_voxel_hash.pt"),
+        label_pth=os.path.join(graph_save_dir, "merged_labels.pt"),
+    )
 
     # get extractor
     extractor = get_extractor(args=args)
@@ -117,8 +125,24 @@ def tsdf_guided_panoptic(args: ProgramArgs):
             depth_type=args.tsdf_depth_type,
             depth_intr=inputs["depth_intr"],
             depth=inputs["depth"],
+            Io2D_threshold=args.guided_panoptic_Io2D_threshold,
         )
 
         torch.save(corres, os.path.join(save_dir, "corres_{:>06d}.pt".format(idx)))
 
     tsdf_volume.save_instance(os.path.join(save_dir, "panoptic_labels.pt"))
+
+    # save mesh for visualization
+    color_set = np.random.random(size=(args.kmeans_cluster_num + 1, 3))
+    color_set[0, :] = 0.0
+
+    verts, faces = tsdf_volume.extract_mesh()
+    mesh = o3d.geometry.TriangleMesh(
+        vertices=o3d.utility.Vector3dVector(verts),
+        triangles=o3d.utility.Vector3iVector(faces),
+    )
+    mesh_labels = tsdf_volume.extract_label_on_grid(verts=verts, device=args.pipeline_device)[0]
+    color = color_set[mesh_labels]
+    mesh.vertex_colors = o3d.utility.Vector3dVector(color)
+
+    o3d.io.write_triangle_mesh(filename=os.path.join(save_dir, "colored_mash.ply"), mesh=mesh)
