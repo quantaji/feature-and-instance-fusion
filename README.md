@@ -1,5 +1,7 @@
 # Semester Project: Fusing 2D features and segmentations into 3D
 
+Check out my project thesis here! https://cn.overleaf.com/read/yrhtydnnsnbp#fe92cb
+
 ## Setup Environments
 
 
